@@ -58,7 +58,12 @@ impl LexerGrammar {
     /// Convenience: returns the token-type string (identity function, useful for
     /// readability when building grammars: `lg.token_type("NUMBER")`).
     pub fn token_type<'a>(&self, name: &'a str) -> &'a str {
-        name
+        for rule in &self.rules {
+            if rule.token_type == name {
+                return name;
+            }
+        }
+        panic!("Unrecognized token type: {}", name);
     }
 }
 
