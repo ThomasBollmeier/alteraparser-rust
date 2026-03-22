@@ -25,7 +25,7 @@ fn test_invalid_syntax() {
     let input = "\n        3 + * 5\n    ";
     let err = parser.parse_text(input).unwrap_err();
     match err {
-        ParseError::UnexpectedToken { found, line, col } => {
+        ParseError::UnexpectedToken { found, line, col: _ } => {
             assert_eq!(found, "*");
             assert_eq!(line, 2);
             // column may vary by whitespace; just ensure we get the right token

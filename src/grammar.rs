@@ -203,7 +203,7 @@ fn find_follow_tokens_rec(
         path_so_far.push(Rc::clone(node));
     }
 
-    // If this is a Token and we should include it, record and stop.
+    // If this is a Token, and we should include it, record and stop.
     if let GrammarNodeKind::Token(ref tt) = node.kind {
         if include_self {
             results.push((tt.clone(), path_so_far));
@@ -320,6 +320,7 @@ impl GrammarElement for TokenElement {
     fn get_id(&self) -> &str { &self.node.id }
 }
 
+/*
 // ─────────────────────────────────────────────────────────────────────────────
 // NormalElement  (wraps a single Normal node)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -344,6 +345,8 @@ impl GrammarElement for NormalElement {
     fn set_id(&mut self, _: &str) {}
     fn get_id(&self) -> &str { "" }
 }
+
+ */
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sequence
