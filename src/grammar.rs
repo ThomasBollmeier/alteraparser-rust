@@ -150,7 +150,7 @@ impl GrammarNode {
     }
 
     /// Get children, triggering lazy expansion first if this is a RuleStart node.
-    pub fn get_children(&self) -> std::cell::Ref<Vec<NodeRef>> {
+    pub fn get_children(&self) -> std::cell::Ref<'_, Vec<NodeRef>> {
         self.expand_if_needed();
         self.children.borrow()
     }

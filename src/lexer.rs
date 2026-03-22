@@ -39,7 +39,7 @@ impl<'g> Lexer<'g> {
 
             let mut matched = false;
             for rule in self.grammar.rules() {
-                if let Some(m) = rule.pattern.find(&self.input) {
+                if let Ok(Some(m)) = rule.pattern.find(&self.input) {
                     let value = m.as_str().to_string();
                     let tok_line = self.line;
                     let tok_col = self.column;

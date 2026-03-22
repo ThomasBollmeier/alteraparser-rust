@@ -6,5 +6,5 @@ description = "A parser-combinator library with lexer, grammar, and AST support"
 license = "MIT"
 
 [dependencies]
-regex = "1"
+fancy-regex = "0.17.0"
 thiserror = "2"

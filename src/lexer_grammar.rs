@@ -1,4 +1,4 @@
-use regex::Regex;
+use fancy_regex::Regex;
 
 /// A single tokenization rule: a token-type name, a compiled regex, and whether
 /// matched tokens should be discarded (ignored).
@@ -83,8 +83,8 @@ mod tests {
         lg.add_rule("NUM", r"\d+", false, false);
         let r = &lg.rules()[0];
         assert_eq!(r.token_type, "NUM");
-        assert!(r.pattern.is_match("123abc"));
-        assert!(!r.pattern.is_match("abc123"));
+        assert!(r.pattern.is_match("123abc").unwrap());
+        assert!(!r.pattern.is_match("abc123").unwrap());
     }
 
     #[test]
@@ -98,7 +98,7 @@ mod tests {
     fn test_case_insensitive() {
         let mut lg = LexerGrammar::new();
         lg.add_rule("KW", "if", false, true);
-        assert!(lg.rules()[0].pattern.is_match("IF"));
-        assert!(lg.rules()[0].pattern.is_match("If"));
+        assert!(lg.rules()[0].pattern.is_match("IF").unwrap());
+        assert!(lg.rules()[0].pattern.is_match("If").unwrap());
     }
 }
