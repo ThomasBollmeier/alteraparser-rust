@@ -27,7 +27,16 @@ impl Parser {
 
     /// Parse all tokens from `stream` and return the root [`Ast`] node.
     pub fn parse(&self, stream: &mut dyn TokenStream) -> Result<Ast, ParseError> {
-        let start = self.grammar.start_node();
+        self._parse(self.grammar.start_node(), self.grammar.end_node(), stream)
+    }
+
+    // Parse a rule
+    pub fn parse_rule(&self, rule_name: &str, stream: &mut dyn TokenStream) -> Result<Ast, ParseError> {
+        let rule_element = self.grammar.get_rule_element(rule_name)?;
+        self._parse(rule_element.in_node(), rule_element.out_node(), stream)
+    }
+
+    fn _parse(&self, start: NodeRef, end: NodeRef, stream: &mut dyn TokenStream) -> Result<Ast, ParseError> {
         let mut active_paths: Vec<Vec<NodeRef>> = vec![vec![start]];
         let mut consumed_tokens: Vec<Token> = Vec::new();
 
@@ -70,7 +79,6 @@ impl Parser {
         }
 
         // Filter paths that can reach the grammar end via epsilon transitions
-        let end = self.grammar.end_node();
         let end_ptr = Rc::as_ptr(&end);
         let mut valid_paths: Vec<Vec<NodeRef>> = Vec::new();
         for path in &active_paths {
@@ -114,9 +122,14 @@ impl TextParser {
         }
     }
 
-    pub fn parse_text(&self, text: &str) -> Result<Ast, ParseError> {
+    pub fn parse(&self, text: &str) -> Result<Ast, ParseError> {
         let mut lexer = Lexer::new(&self.lexer_grammar, text);
         self.parser.parse(&mut lexer)
+    }
+
+    pub fn parse_rule(&self, rule_name: &str, text: &str) -> Result<Ast, ParseError> {
+        let mut lexer = Lexer::new(&self.lexer_grammar, text);
+        self.parser.parse_rule(rule_name, &mut lexer)
     }
 }
 
@@ -204,7 +217,9 @@ mod tests {
     fn test_incomplete_parse_error() {
         let mut g = Grammar::new();
         // seq([NUM, PLUS, NUM]) but we only provide NUM
-        g.add_rule("expr", true, |_| seq(vec![tok("NUM"), tok("PLUS"), tok("NUM")]));
+        g.add_rule("expr", true, |_| {
+            seq(vec![tok("NUM"), tok("PLUS"), tok("NUM")])
+        });
         let parser = Parser::new(g);
         let mut stream = TokenStreamFromList::new(vec![Token::new("NUM", "1", 1, 1)]);
         let err = parser.parse(&mut stream).unwrap_err();
@@ -214,7 +229,9 @@ mod tests {
     #[test]
     fn test_parse_sequence() {
         let mut g = Grammar::new();
-        g.add_rule("expr", true, |_| seq(vec![tok("NUM"), tok("PLUS"), tok("NUM")]));
+        g.add_rule("expr", true, |_| {
+            seq(vec![tok("NUM"), tok("PLUS"), tok("NUM")])
+        });
         let parser = Parser::new(g);
         let tokens = vec![
             Token::new("NUM", "1", 1, 1),

@@ -22,4 +22,7 @@ pub enum ParseError {
     /// All tokens were consumed but no valid parse path reached the grammar end.
     #[error("Incomplete parse: cannot reach grammar end")]
     IncompleteParse,
+
+    #[error("Undefined rule: {rule_name}")]
+    UndefinedRule{rule_name: String},
 }

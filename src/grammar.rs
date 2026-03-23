@@ -34,7 +34,7 @@ use std::collections::HashSet;
 use std::rc::Rc;
 
 use crate::ast::Ast;
-
+use crate::error::ParseError;
 // ─────────────────────────────────────────────────────────────────────────────
 // Expander type alias
 // ─────────────────────────────────────────────────────────────────────────────
@@ -130,7 +130,12 @@ impl GrammarNode {
         })
     }
 
-    fn new_lazy_start(rule_name: &str, id: &str, rule_end: NodeRef, defs: Rc<HashMap<String, ExpanderFn>>) -> NodeRef {
+    fn new_lazy_start(
+        rule_name: &str,
+        id: &str,
+        rule_end: NodeRef,
+        defs: Rc<HashMap<String, ExpanderFn>>,
+    ) -> NodeRef {
         let expander = Rc::clone(&defs[rule_name]);
         Rc::new(GrammarNode {
             kind: GrammarNodeKind::RuleStart(rule_name.to_string()),
@@ -160,7 +165,9 @@ impl GrammarNode {
             if !lazy.is_expanded.get() {
                 // Mark expanded BEFORE calling expander to break recursion cycles.
                 lazy.is_expanded.set(true);
-                let handle = GrammarHandle { defs: Rc::clone(&lazy.defs) };
+                let handle = GrammarHandle {
+                    defs: Rc::clone(&lazy.defs),
+                };
                 let body = (lazy.expander)(&handle);
                 self.children.borrow_mut().push(body.in_node());
                 body.out_node().add_child(Rc::clone(&lazy.rule_end));
@@ -169,7 +176,11 @@ impl GrammarNode {
     }
 }
 
-fn make_lazy_rule(name: &str, id: &str, defs: Rc<HashMap<String, ExpanderFn>>) -> Box<dyn GrammarElement> {
+fn make_lazy_rule(
+    name: &str,
+    id: &str,
+    defs: Rc<HashMap<String, ExpanderFn>>,
+) -> Box<dyn GrammarElement> {
     let end = GrammarNode::new(GrammarNodeKind::RuleEnd(name.to_string()));
     let start = GrammarNode::new_lazy_start(name, id, Rc::clone(&end), defs);
     Box::new(LazyRuleElement { start, end })
@@ -302,22 +313,36 @@ impl TokenElement {
 }
 
 impl GrammarElement for TokenElement {
-    fn in_node(&self) -> NodeRef { Rc::clone(&self.node) }
-    fn out_node(&self) -> NodeRef { Rc::clone(&self.node) }
+    fn in_node(&self) -> NodeRef {
+        Rc::clone(&self.node)
+    }
+    fn out_node(&self) -> NodeRef {
+        Rc::clone(&self.node)
+    }
     fn clone_element(&self) -> Box<dyn GrammarElement> {
         let kind = self.node.kind.clone();
         let id = self.node.id.clone();
-        let token_type = if let GrammarNodeKind::Token(ref t) = kind { t.as_str() } else { "" };
+        let token_type = if let GrammarNodeKind::Token(ref t) = kind {
+            t.as_str()
+        } else {
+            ""
+        };
         Box::new(TokenElement::new(token_type, &id))
     }
     fn set_id(&mut self, id: &str) {
         // Token nodes are Rc; we can't mutate through Rc without RefCell.
         // Re-create the node with the new id.
         let kind = self.node.kind.clone();
-        let token_type = if let GrammarNodeKind::Token(ref t) = kind { t.clone() } else { String::new() };
+        let token_type = if let GrammarNodeKind::Token(ref t) = kind {
+            t.clone()
+        } else {
+            String::new()
+        };
         self.node = GrammarNode::new_with_id(GrammarNodeKind::Token(token_type), id);
     }
-    fn get_id(&self) -> &str { &self.node.id }
+    fn get_id(&self) -> &str {
+        &self.node.id
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -341,13 +366,21 @@ impl Sequence {
 }
 
 impl GrammarElement for Sequence {
-    fn in_node(&self) -> NodeRef { self.elements[0].in_node() }
-    fn out_node(&self) -> NodeRef { self.elements.last().unwrap().out_node() }
+    fn in_node(&self) -> NodeRef {
+        self.elements[0].in_node()
+    }
+    fn out_node(&self) -> NodeRef {
+        self.elements.last().unwrap().out_node()
+    }
     fn clone_element(&self) -> Box<dyn GrammarElement> {
-        Box::new(Sequence::new(self.elements.iter().map(|e| e.clone_element()).collect()))
+        Box::new(Sequence::new(
+            self.elements.iter().map(|e| e.clone_element()).collect(),
+        ))
     }
     fn set_id(&mut self, _: &str) {}
-    fn get_id(&self) -> &str { "" }
+    fn get_id(&self) -> &str {
+        ""
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -364,25 +397,37 @@ pub struct ChoiceElement {
 impl ChoiceElement {
     fn new(branches: Vec<Box<dyn GrammarElement>>) -> Self {
         let start = GrammarNode::new(GrammarNodeKind::Normal);
-        let end   = GrammarNode::new(GrammarNodeKind::Normal);
+        let end = GrammarNode::new(GrammarNodeKind::Normal);
         let cloned: Vec<Box<dyn GrammarElement>> =
             branches.into_iter().map(|b| b.clone_element()).collect();
         for b in &cloned {
             start.add_child(b.in_node());
             b.out_node().add_child(Rc::clone(&end));
         }
-        ChoiceElement { branches: cloned, start, end }
+        ChoiceElement {
+            branches: cloned,
+            start,
+            end,
+        }
     }
 }
 
 impl GrammarElement for ChoiceElement {
-    fn in_node(&self) -> NodeRef { Rc::clone(&self.start) }
-    fn out_node(&self) -> NodeRef { Rc::clone(&self.end) }
+    fn in_node(&self) -> NodeRef {
+        Rc::clone(&self.start)
+    }
+    fn out_node(&self) -> NodeRef {
+        Rc::clone(&self.end)
+    }
     fn clone_element(&self) -> Box<dyn GrammarElement> {
-        Box::new(ChoiceElement::new(self.branches.iter().map(|b| b.clone_element()).collect()))
+        Box::new(ChoiceElement::new(
+            self.branches.iter().map(|b| b.clone_element()).collect(),
+        ))
     }
     fn set_id(&mut self, _: &str) {}
-    fn get_id(&self) -> &str { "" }
+    fn get_id(&self) -> &str {
+        ""
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -400,22 +445,28 @@ impl OptionalElement {
     fn new(element: Box<dyn GrammarElement>) -> Self {
         let inner = element.clone_element();
         let start = GrammarNode::new(GrammarNodeKind::Normal);
-        let end   = GrammarNode::new(GrammarNodeKind::Normal);
+        let end = GrammarNode::new(GrammarNodeKind::Normal);
         start.add_child(inner.in_node());
-        start.add_child(Rc::clone(&end));         // bypass path
+        start.add_child(Rc::clone(&end)); // bypass path
         inner.out_node().add_child(Rc::clone(&end));
         OptionalElement { inner, start, end }
     }
 }
 
 impl GrammarElement for OptionalElement {
-    fn in_node(&self) -> NodeRef { Rc::clone(&self.start) }
-    fn out_node(&self) -> NodeRef { Rc::clone(&self.end) }
+    fn in_node(&self) -> NodeRef {
+        Rc::clone(&self.start)
+    }
+    fn out_node(&self) -> NodeRef {
+        Rc::clone(&self.end)
+    }
     fn clone_element(&self) -> Box<dyn GrammarElement> {
         Box::new(OptionalElement::new(self.inner.clone_element()))
     }
     fn set_id(&mut self, _: &str) {}
-    fn get_id(&self) -> &str { "" }
+    fn get_id(&self) -> &str {
+        ""
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -433,22 +484,28 @@ impl ManyElement {
     fn new(element: Box<dyn GrammarElement>) -> Self {
         let inner = element.clone_element();
         let start = GrammarNode::new(GrammarNodeKind::Normal);
-        let end   = GrammarNode::new(GrammarNodeKind::Normal);
+        let end = GrammarNode::new(GrammarNodeKind::Normal);
         start.add_child(inner.in_node());
-        start.add_child(Rc::clone(&end));          // zero-matches bypass
+        start.add_child(Rc::clone(&end)); // zero-matches bypass
         inner.out_node().add_child(Rc::clone(&start)); // loop back
         ManyElement { inner, start, end }
     }
 }
 
 impl GrammarElement for ManyElement {
-    fn in_node(&self) -> NodeRef { Rc::clone(&self.start) }
-    fn out_node(&self) -> NodeRef { Rc::clone(&self.end) }
+    fn in_node(&self) -> NodeRef {
+        Rc::clone(&self.start)
+    }
+    fn out_node(&self) -> NodeRef {
+        Rc::clone(&self.end)
+    }
     fn clone_element(&self) -> Box<dyn GrammarElement> {
         Box::new(ManyElement::new(self.inner.clone_element()))
     }
     fn set_id(&mut self, _: &str) {}
-    fn get_id(&self) -> &str { "" }
+    fn get_id(&self) -> &str {
+        ""
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -465,8 +522,12 @@ pub struct LazyRuleElement {
 }
 
 impl GrammarElement for LazyRuleElement {
-    fn in_node(&self) -> NodeRef { Rc::clone(&self.start) }
-    fn out_node(&self) -> NodeRef { Rc::clone(&self.end) }
+    fn in_node(&self) -> NodeRef {
+        Rc::clone(&self.start)
+    }
+    fn out_node(&self) -> NodeRef {
+        Rc::clone(&self.end)
+    }
     fn clone_element(&self) -> Box<dyn GrammarElement> {
         // Clone = create a new independent lazy instance for this rule.
         // Retrieve the rule name and defs from the start node's lazy payload.
@@ -475,9 +536,7 @@ impl GrammarElement for LazyRuleElement {
             _ => panic!("LazyRuleElement start is not RuleStart"),
         };
         let id = self.start.id.clone();
-        let defs = Rc::clone(
-            &self.start.lazy.as_ref().expect("missing lazy payload").defs,
-        );
+        let defs = Rc::clone(&self.start.lazy.as_ref().expect("missing lazy payload").defs);
         make_lazy_rule(&rule_name, &id, defs)
     }
     fn set_id(&mut self, id: &str) {
@@ -486,13 +545,13 @@ impl GrammarElement for LazyRuleElement {
             GrammarNodeKind::RuleStart(n) => n.clone(),
             _ => panic!("LazyRuleElement start is not RuleStart"),
         };
-        let defs = Rc::clone(
-            &self.start.lazy.as_ref().expect("missing lazy payload").defs,
-        );
+        let defs = Rc::clone(&self.start.lazy.as_ref().expect("missing lazy payload").defs);
         // Rebuild with the new id; drop any previous (unexpanded) children.
         self.start = GrammarNode::new_lazy_start(&rule_name, id, Rc::clone(&self.end), defs);
     }
-    fn get_id(&self) -> &str { &self.start.id }
+    fn get_id(&self) -> &str {
+        &self.start.id
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -591,7 +650,8 @@ impl Grammar {
 
     /// Register an AST transformer for the named rule.
     pub fn add_ast_transformer(&mut self, rule_name: &str, f: impl Fn(Ast) -> Ast + 'static) {
-        self.ast_transformers.insert(rule_name.to_string(), Box::new(f));
+        self.ast_transformers
+            .insert(rule_name.to_string(), Box::new(f));
     }
 
     pub fn get_ast_transformer(&self, rule_name: &str) -> Option<&dyn Fn(Ast) -> Ast> {
@@ -600,7 +660,9 @@ impl Grammar {
 
     /// Compile the grammar into a syntax graph.  Idempotent.
     pub fn compile(&mut self) {
-        if self.compiled { return; }
+        if self.compiled {
+            return;
+        }
 
         let start_rule = self.start_rule.clone().expect("No start rule set");
 
@@ -615,14 +677,14 @@ impl Grammar {
 
         // Wrap the start rule in global start/end Normal nodes.
         let global_start = GrammarNode::new(GrammarNodeKind::Normal);
-        let global_end   = GrammarNode::new(GrammarNodeKind::Normal);
+        let global_end = GrammarNode::new(GrammarNodeKind::Normal);
 
         let start_elem = make_lazy_rule(&start_rule, "", Rc::clone(&defs));
         global_start.add_child(start_elem.in_node());
         start_elem.out_node().add_child(Rc::clone(&global_end));
 
         self.global_start = Some(global_start);
-        self.global_end   = Some(global_end);
+        self.global_end = Some(global_end);
         self.compiled = true;
     }
 
@@ -642,10 +704,26 @@ impl Grammar {
         let end_ptr = Rc::as_ptr(&end);
         find_epsilon_path(node, &|n| Rc::as_ptr(n) == end_ptr)
     }
+
+    // Get a rule element by name:
+    pub fn get_rule_element(&self, name: &str) -> Result<Box<dyn GrammarElement>, ParseError> {
+        let defs = Rc::new(self.rule_defs.clone());
+
+        if !defs.contains_key(name) {
+            return Err(ParseError::UndefinedRule {
+                rule_name: name.to_string(),
+            });
+        }
+
+        let handle = GrammarHandle { defs };
+        Ok(handle.rule_ref(name))
+    }
 }
 
 impl Default for Grammar {
-    fn default() -> Self { Grammar::new() }
+    fn default() -> Self {
+        Grammar::new()
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -681,7 +759,9 @@ mod tests {
         g.add_rule("expr", true, |_| choice(vec![tok("A"), tok("B")]));
         g.compile();
         let mut types: Vec<String> = find_follow_tokens(&g.start_node())
-            .into_iter().map(|(t, _)| t).collect();
+            .into_iter()
+            .map(|(t, _)| t)
+            .collect();
         types.sort();
         assert_eq!(types, vec!["A", "B"]);
     }
@@ -693,7 +773,9 @@ mod tests {
         g.add_rule("expr", true, |_| seq(vec![opt(tok("A")), tok("B")]));
         g.compile();
         let mut types: Vec<String> = find_follow_tokens(&g.start_node())
-            .into_iter().map(|(t, _)| t).collect();
+            .into_iter()
+            .map(|(t, _)| t)
+            .collect();
         types.sort();
         assert_eq!(types, vec!["A", "B"]);
     }
@@ -705,7 +787,9 @@ mod tests {
         g.add_rule("expr", true, |_| seq(vec![many(tok("A")), tok("B")]));
         g.compile();
         let mut types: Vec<String> = find_follow_tokens(&g.start_node())
-            .into_iter().map(|(t, _)| t).collect();
+            .into_iter()
+            .map(|(t, _)| t)
+            .collect();
         types.sort();
         assert_eq!(types, vec!["A", "B"]);
     }
@@ -765,6 +849,32 @@ mod tests {
         let parser = Parser::new(g);
         let mut stream = TokenStreamFromList::new(vec![Token::new("NUM", "1", 1, 1)]);
         let result = parser.parse(&mut stream);
-        assert!(result.is_ok(), "should parse without ambiguity: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "should parse without ambiguity: {:?}",
+            result
+        );
+    }
+
+    #[test]
+    fn test_get_rule() {
+        let mut g = Grammar::new();
+        g.add_rule("factor", false, |_| tok("NUM"));
+        g.add_rule("term", true, |h| {
+            seq(vec![
+                h.rule_ref("factor"),
+                many(seq(vec![tok("MUL"), h.rule_ref("factor")])),
+            ])
+        });
+        g.compile();
+
+        let term_elem = g.get_rule_element("term");
+        assert!(term_elem.is_ok(), "should retrieve existing rule");
+
+        let non_existent = g.get_rule_element("nonexistent");
+        assert!(
+            non_existent.is_err(),
+            "should not retrieve non-existing rule"
+        );
     }
 }
