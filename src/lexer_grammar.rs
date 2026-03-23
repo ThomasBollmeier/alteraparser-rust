@@ -1,9 +1,18 @@
+use std::rc::Rc;
 use fancy_regex::Regex;
+
+type TokenTypeDeriveFn = Rc<dyn Fn(&str) -> String>;
+
+fn fixed_token_type(token_type: impl Into<String>) -> TokenTypeDeriveFn {
+    let token_type_str = token_type.into();
+    Rc::new(move |_| token_type_str.clone())
+}
+
 
 /// A single tokenization rule: a token-type name, a compiled regex, and whether
 /// matched tokens should be discarded (ignored).
 pub struct LexerRule {
-    pub token_type: String,
+    pub token_type_fn: TokenTypeDeriveFn,
     pub pattern: Regex,
     pub ignore: bool,
 }
@@ -33,6 +42,21 @@ impl LexerGrammar {
         ignore: bool,
         case_insensitive: bool,
     ) -> &mut Self {
+        self.add_rule_with_tok_type_derivation(
+            fixed_token_type(token_type),
+            pattern,
+            ignore,
+            case_insensitive,
+        )
+    }
+
+    pub fn add_rule_with_tok_type_derivation(
+        &mut self,
+        token_type_fn: TokenTypeDeriveFn,
+        pattern: &str,
+        ignore: bool,
+        case_insensitive: bool,
+    ) -> &mut Self {
         let anchored = if pattern.starts_with('^') {
             pattern.to_string()
         } else {
@@ -44,7 +68,7 @@ impl LexerGrammar {
             Regex::new(&anchored).expect("Invalid regex pattern")
         };
         self.rules.push(LexerRule {
-            token_type: token_type.into(),
+            token_type_fn,
             pattern: regex,
             ignore,
         });
@@ -58,12 +82,7 @@ impl LexerGrammar {
     /// Convenience: returns the token-type string (identity function, useful for
     /// readability when building grammars: `lg.token_type("NUMBER")`).
     pub fn token_type<'a>(&self, name: &'a str) -> &'a str {
-        for rule in &self.rules {
-            if rule.token_type == name {
-                return name;
-            }
-        }
-        panic!("Unrecognized token type: {}", name);
+        name
     }
 }
 
@@ -82,7 +101,6 @@ mod tests {
         let mut lg = LexerGrammar::new();
         lg.add_rule("NUM", r"\d+", false, false);
         let r = &lg.rules()[0];
-        assert_eq!(r.token_type, "NUM");
         assert!(r.pattern.is_match("123abc").unwrap());
         assert!(!r.pattern.is_match("abc123").unwrap());
     }

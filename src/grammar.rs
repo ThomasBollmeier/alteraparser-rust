@@ -320,34 +320,6 @@ impl GrammarElement for TokenElement {
     fn get_id(&self) -> &str { &self.node.id }
 }
 
-/*
-// ─────────────────────────────────────────────────────────────────────────────
-// NormalElement  (wraps a single Normal node)
-// ─────────────────────────────────────────────────────────────────────────────
-
-struct NormalElement {
-    node: NodeRef,
-}
-
-impl NormalElement {
-    fn new() -> Self { NormalElement { node: GrammarNode::new(GrammarNodeKind::Normal) } }
-}
-
-impl GrammarElement for NormalElement {
-    fn in_node(&self) -> NodeRef { Rc::clone(&self.node) }
-    fn out_node(&self) -> NodeRef { Rc::clone(&self.node) }
-    fn clone_element(&self) -> Box<dyn GrammarElement> {
-        // Sharing the same underlying node is fine for Normal elements
-        // used only as anchors; callers that need isolation should use
-        // a different element type.
-        Box::new(NormalElement { node: Rc::clone(&self.node) })
-    }
-    fn set_id(&mut self, _: &str) {}
-    fn get_id(&self) -> &str { "" }
-}
-
- */
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Sequence
 // ─────────────────────────────────────────────────────────────────────────────

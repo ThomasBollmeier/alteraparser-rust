@@ -58,7 +58,10 @@ impl<'g> Lexer<'g> {
                         matched = true;
                         break; // continue outer loop
                     }
-                    return Ok(Some(Token::new(&rule.token_type, value, tok_line, tok_col)));
+                    
+                    let token_type = rule.token_type_fn.clone()(&value);
+                    
+                    return Ok(Some(Token::new(&token_type, value, tok_line, tok_col)));
                 }
             }
 

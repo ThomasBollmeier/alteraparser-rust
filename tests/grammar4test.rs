@@ -32,6 +32,7 @@ pub fn make_lexer_grammar() -> LexerGrammar {
 }
 
 /// Collapse single-child rule nodes (mirrors `_trans_single_child` in Python).
+#[allow(dead_code)]
 fn trans_single_child(ast: Ast) -> Ast {
     if ast.children().len() == 1 {
         ast[0].clone()
@@ -40,6 +41,8 @@ fn trans_single_child(ast: Ast) -> Ast {
     }
 }
 
+
+#[allow(dead_code)]
 pub fn make_grammar() -> Grammar {
     let mut g = Grammar::new();
 
