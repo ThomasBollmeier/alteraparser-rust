@@ -30,6 +30,8 @@ pub mod lexer_grammar;
 pub mod parser;
 pub mod token;
 
+pub mod meta;
+
 pub mod prelude {
     pub use crate::ast::{Ast, AstStrWriter};
     pub use crate::error::ParseError;
