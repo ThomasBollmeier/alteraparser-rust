@@ -35,7 +35,7 @@ pub mod meta;
 pub mod prelude {
     pub use crate::ast::{Ast, AstStrWriter};
     pub use crate::error::ParseError;
-    pub use crate::grammar::{choice, many, one_or_more, opt, seq, tok, Grammar};
+    pub use crate::grammar::{choice, many, one_or_more, opt, seq, tok, tok_id, Grammar};
     pub use crate::lexer::Lexer;
     pub use crate::lexer_grammar::LexerGrammar;
     pub use crate::parser::{Parser, TextParser};

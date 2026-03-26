@@ -2,21 +2,21 @@ use crate::lexer_grammar::LexerGrammar;
 
 pub fn make_lexer_grammar() -> LexerGrammar {
     let mut lg = LexerGrammar::new();
-    lg.add_rule("WHITESPACE", r"\s+", true,  false);
-    lg.add_rule("COMMENT",    r"\-\-.*", true, false);
-    lg.add_rule("QUESTION_MARK",      r"\?", false, false);
-    lg.add_rule("ASTERISK",      r"\*", false, false);
-    lg.add_rule("PLUS",            r"\+", false, false);
-    lg.add_rule("LPAREN",            r"\(", false, false);
-    lg.add_rule("RPAREN",            r"\)", false, false);
-    lg.add_rule("PIPE",      r"\|", false, false);
-    lg.add_rule("HASH",       r"#", false, false);
-    lg.add_rule("SEMICOLON",          r";", false, false);
-    lg.add_rule("RARROW",        r"\->", false, false);
-    lg.add_rule("IDENT",      r"[a-z][a-z0-9_]*", false, false);
-    lg.add_rule("TOKEN",      r"[A-Z][A-Z0-9_]*", false, false);
-    lg.add_rule("NUMBER",      r"\-\-", false, false);
-    lg.add_rule("START_ANNOTATION",        r"@start", false, false);
+    lg.add_rule("WHITESPACE", r"\s+", true, false);
+    lg.add_rule("COMMENT", r"\-\-.*", true, false);
+    lg.add_rule("QUESTION_MARK", r"\?", false, false);
+    lg.add_rule("ASTERISK", r"\*", false, false);
+    lg.add_rule("PLUS", r"\+", false, false);
+    lg.add_rule("LPAREN", r"\(", false, false);
+    lg.add_rule("RPAREN", r"\)", false, false);
+    lg.add_rule("PIPE", r"\|", false, false);
+    lg.add_rule("HASH", r"#", false, false);
+    lg.add_rule("SEMICOLON", r";", false, false);
+    lg.add_rule("RARROW", r"\->", false, false);
+    lg.add_rule("IDENT", r"[a-z][a-z0-9_]*", false, false);
+    lg.add_rule("TOKEN", r"[A-Z][A-Z0-9_]*", false, false);
+    lg.add_rule("NUMBER", r"\-\-", false, false);
+    lg.add_rule("START_ANNOTATION", r"@start", false, false);
     lg
 }
 
@@ -49,7 +49,5 @@ mod tests {
                 Err(e) => panic!("Lex error: {:?}", e),
             }
         }
-
     }
-
 }
