@@ -88,7 +88,7 @@ impl CodeGenerator {
             "seq" | "choice" => self.generate_seq_or_choice(body, lines, end_with_line_break),
             "opt" | "one_or_more" | "many" => self.generate_mult(body, lines, end_with_line_break),
             "rule_ref" => self.generate_simple("g.rule_ref", body, lines, end_with_line_break),
-            "token" => self.generate_simple(name, body, lines, end_with_line_break),
+            "token" => self.generate_simple("tok", body, lines, end_with_line_break),
             _ => {}
         }
     }
