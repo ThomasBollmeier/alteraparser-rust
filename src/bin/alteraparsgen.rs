@@ -1,4 +1,4 @@
-use alteraparser::meta::codegen::CodeGenerator;
+use alteraparser::meta::codegen::CodeGeneratorBuilder;
 use clap::Parser;
 
 #[derive(clap::Parser, Debug, Clone)]
@@ -20,6 +20,13 @@ pub struct Options {
         default_value_t = 2
     )]
     pub indent_size: usize,
+
+    #[arg(
+        long = "grammar-fn",
+        help = "Name of the grammar constructor function",
+        default_value = "make_grammar"
+    )]
+    pub grammar_fn: String,
 }
 
 fn main() {
@@ -28,17 +35,23 @@ fn main() {
     let grammar_content = std::fs::read_to_string(&options.grammar_input_file)
         .expect("Failed to read grammar input file");
 
-    let top_comment = format!("Generated from grammar file: {}", options.grammar_input_file);
+    let top_comment = format!(
+        "Generated from grammar file: {}",
+        options.grammar_input_file
+    );
 
-    let code_generator = CodeGenerator::with_comment(options.indent_size, top_comment);
+    let code_generator = CodeGeneratorBuilder::new()
+        .indent_size(options.indent_size)
+        .top_comment(&top_comment)
+        .function_name(&options.grammar_fn)
+        .build();
 
     let grammar_code = code_generator
         .generate_code(&grammar_content)
         .expect("Failed to generate grammar code");
 
     if let Some(output_file) = options.grammar_output_file {
-        std::fs::write(&output_file, grammar_code)
-            .expect("Failed to write grammar output file");
+        std::fs::write(&output_file, grammar_code).expect("Failed to write grammar output file");
     } else {
         println!("{}", grammar_code);
     }

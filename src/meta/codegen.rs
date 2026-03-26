@@ -5,23 +5,57 @@ use crate::meta::grammar::make_grammar;
 use crate::meta::lexer_grammar::make_lexer_grammar;
 use crate::parser::Parser;
 
-pub struct CodeGenerator {
+pub struct CodeGeneratorBuilder {
     indent_size: usize,
     top_comment: String,
+    function_name: String,
 }
 
-impl CodeGenerator {
-    pub fn new(indent_size: usize) -> Self {
+impl CodeGeneratorBuilder {
+    pub fn new() -> Self {
         Self {
-            indent_size,
+            indent_size: 2,
             top_comment: "".to_string(),
+            function_name: "make_grammar".to_string(),
         }
     }
 
-    pub fn with_comment(indent_size: usize, top_comment: String) -> Self {
+    pub fn indent_size(&mut self, size: usize) -> &mut Self {
+        self.indent_size = size;
+        self
+    }
+
+    pub fn top_comment(&mut self, comment: &str) -> &mut Self {
+        self.top_comment = comment.to_string();
+        self
+    }
+
+    pub fn function_name(&mut self, name: &str) -> &mut Self {
+        self.function_name = name.to_string();
+        self
+    }
+
+    pub fn build(&self) -> CodeGenerator {
+        CodeGenerator::new(
+            self.indent_size,
+            self.top_comment.clone(),
+            self.function_name.clone(),
+        )
+    }
+}
+
+pub struct CodeGenerator {
+    indent_size: usize,
+    top_comment: String,
+    function_name: String,
+}
+
+impl CodeGenerator {
+    pub fn new(indent_size: usize, top_comment: String, function_name: String) -> Self {
         Self {
             indent_size,
             top_comment,
+            function_name,
         }
     }
 
@@ -49,7 +83,7 @@ impl CodeGenerator {
         lines.writeln("#![allow(unused)]");
         lines.writeln("use alteraparser::prelude::*;");
         lines.writeln("");
-        lines.writeln("fn make_grammar() -> Grammar {");
+        lines.writeln(&format!("pub fn {}() -> Grammar {{", self.function_name));
         lines.indent();
         lines.writeln("let mut grammar = Grammar::new();");
         lines.writeln("");
@@ -109,9 +143,7 @@ impl CodeGenerator {
                 let id = id.value.as_ref().unwrap();
                 &format!("{}_id(\"{}\", \"{}\")", name, value, id)
             }
-            None => {
-                &format!("{}(\"{}\")", name, value)
-            }
+            None => &format!("{}(\"{}\")", name, value),
         };
 
         if end_with_line_break {
@@ -209,7 +241,7 @@ impl Lines {
 
 #[cfg(test)]
 mod test {
-    use crate::meta::codegen::CodeGenerator;
+    use crate::meta::codegen::CodeGeneratorBuilder;
 
     #[test]
     fn test_codegen() {
@@ -225,7 +257,11 @@ mod test {
         group -> LPAREN sum RPAREN;
         "#;
 
-        let code_gen = CodeGenerator::new(2);
+        let code_gen = CodeGeneratorBuilder::new()
+            .indent_size(4)
+            .top_comment("Generated grammar code")
+            .function_name("make_expression_grammar")
+            .build();
 
         println!("{}", code_gen.generate_code(&grammar_definition).unwrap());
     }
