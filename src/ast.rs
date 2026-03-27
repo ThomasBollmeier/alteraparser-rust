@@ -64,6 +64,10 @@ impl Ast {
         &self.children
     }
 
+    pub fn children_mut(&mut self) -> &mut Vec<Ast> {
+        &mut self.children
+    }
+
     pub fn nth_child(&self, n: usize) -> &Ast {
         &self.children[n]
     }

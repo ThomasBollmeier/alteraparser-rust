@@ -136,7 +136,10 @@ impl GrammarNode {
         rule_end: NodeRef,
         defs: Rc<HashMap<String, ExpanderFn>>,
     ) -> NodeRef {
-        let expander = Rc::clone(&defs[rule_name]);
+        let expander_fn = defs
+            .get(rule_name)
+            .expect(&format!("Undefined rule: {}", rule_name));
+        let expander = Rc::clone(expander_fn);
         Rc::new(GrammarNode {
             kind: GrammarNodeKind::RuleStart(rule_name.to_string()),
             id: id.to_string(),

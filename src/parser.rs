@@ -106,6 +106,19 @@ impl Parser {
         Ok(build_ast(&valid_paths[0], &consumed_tokens, &self.grammar)
             .expect("AST construction failed"))
     }
+
+    fn _path_to_string(path: &[NodeRef]) -> String {
+        let mut parts: Vec<String> = Vec::new();
+        for node in path {
+            match &node.kind {
+                GrammarNodeKind::RuleStart(name) => parts.push(format!("RuleStart({})", name)),
+                GrammarNodeKind::RuleEnd(name) => parts.push(format!("RuleEnd({})", name)),
+                GrammarNodeKind::Token(tok) => parts.push(format!("Token({})", tok)),
+                GrammarNodeKind::Normal => {}
+            }
+        }
+        parts.join(" -> ")
+    }
 }
 
 /// Convenience wrapper that tokenizes text and then parses it.

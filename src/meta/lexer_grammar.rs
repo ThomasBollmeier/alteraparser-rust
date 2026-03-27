@@ -9,9 +9,12 @@ pub fn make_lexer_grammar() -> LexerGrammar {
     lg.add_rule("PLUS", r"\+", false, false);
     lg.add_rule("LPAREN", r"\(", false, false);
     lg.add_rule("RPAREN", r"\)", false, false);
+    lg.add_rule("LBRACKET", r"<", false, false);
+    lg.add_rule("RBRACKET", r">", false, false);
     lg.add_rule("PIPE", r"\|", false, false);
     lg.add_rule("HASH", r"#", false, false);
     lg.add_rule("SEMICOLON", r";", false, false);
+    lg.add_rule("COMMA", r",", false, false);
     lg.add_rule("RARROW", r"\->", false, false);
     lg.add_rule("IDENT", r"[a-z][a-z0-9_]*", false, false);
     lg.add_rule("TOKEN", r"[A-Z][A-Z0-9_]*", false, false);
