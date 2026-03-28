@@ -3,6 +3,7 @@ use crate::error::ParseError;
 use crate::lexer::Lexer;
 use crate::meta::grammar::make_grammar;
 use crate::meta::lexer_grammar::make_lexer_grammar;
+use crate::meta::macros::MacroExpander;
 use crate::parser::Parser;
 
 pub struct CodeGeneratorBuilder {
@@ -67,6 +68,9 @@ impl CodeGenerator {
         let parser = Parser::new(grammar);
 
         let ast = parser.parse(&mut lexer)?;
+
+        let mut expander = MacroExpander::new();
+        let ast = expander.expand_macros(ast);
 
         let mut lines = Lines::new(self.indent_size);
 
