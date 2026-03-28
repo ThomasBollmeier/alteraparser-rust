@@ -86,12 +86,18 @@ impl MacroExpander {
             .find(|c| c.name == "name")
             .and_then(|c| c.value.clone())
             .expect("Macro name not found");
+
         let arguments_node = macro_call
             .children()
             .iter()
             .find(|c| c.name == "arguments")
             .expect("arguments not found");
-        let arguments: Vec<Ast> = arguments_node.children().iter().cloned().collect();
+        let arguments: Vec<Ast> = arguments_node
+            .children()
+            .iter()
+            .flat_map(|c| self.eval_macro_calls(c.clone()))
+            .collect();
+
         let parameters = &self
             .macros
             .get(&macro_name)
@@ -201,8 +207,21 @@ mod test {
         s -> a*;
         a -> group<b>;
         b -> NUMBER;
-        group<content> -> LPAREN double<content> RPAREN;
+        group<content> -> LPAREN double<double<content>> RPAREN;
         double<data> -> data COMMA data;
+        "#;
+
+        run(grammar_code);
+    }
+
+    #[test]
+    fn test_recursive_macro_calls() {
+        let grammar_code = r#"
+        @start
+        s -> a*;
+        a -> group<group<b>>;
+        b -> NUMBER;
+        group<content> -> LPAREN content RPAREN;
         "#;
 
         run(grammar_code);
