@@ -11,7 +11,7 @@ pub struct Options {
     #[arg(help = "Grammar input file")]
     pub grammar_input_file: String,
 
-    #[arg(short = 'o', long = "output", help = "Stop after parsing")]
+    #[arg(short = 'o', long = "output", help = "Grammar output file (if not specified, output to stdout)")]
     pub grammar_output_file: Option<String>,
 
     #[arg(
