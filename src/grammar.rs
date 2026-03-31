@@ -646,7 +646,7 @@ impl Grammar {
         expander: impl Fn(&GrammarHandle) -> Box<dyn GrammarElement> + 'static,
     ) {
         self.rule_defs.insert(name.to_string(), Rc::new(expander));
-        if is_start {
+        if is_start || self.start_rule.is_none() {
             self.start_rule = Some(name.to_string());
         }
     }
