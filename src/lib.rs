@@ -23,6 +23,7 @@
 //! ```
 
 pub mod ast;
+pub mod ast_visualizer;
 pub mod error;
 pub mod grammar;
 pub mod lexer;
@@ -34,6 +35,7 @@ pub mod meta;
 
 pub mod prelude {
     pub use crate::ast::{Ast, AstStrWriter};
+    pub use crate::ast_visualizer::AstVisualizer;
     pub use crate::error::ParseError;
     pub use crate::grammar::{choice, many, one_or_more, opt, seq, tok, tok_id, Grammar};
     pub use crate::lexer::Lexer;
