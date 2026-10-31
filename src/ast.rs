@@ -1,7 +1,8 @@
 use std::collections::HashMap;
+use serde::{Deserialize, Serialize};
 
 /// A value that can be stored as an AST node attribute.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum AstAttr {
     Bool(bool),
     Str(String),
@@ -21,7 +22,7 @@ impl From<String> for AstAttr {
 ///
 /// Rule nodes carry a `name` (the rule name) and no `value`.
 /// Token nodes carry both a `name` (the token type) and a `value` (the matched text).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Ast {
     pub name: String,
     pub value: Option<String>,
@@ -115,6 +116,21 @@ impl Ast {
 
     pub fn has_attr(&self, name: &str) -> bool {
         self.attributes.contains_key(name)
+    }
+
+    /// Serialize this AST to JSON.
+    pub fn to_json(&self) -> Result<String, serde_json::Error> {
+        serde_json::to_string(self)
+    }
+
+    /// Serialize this AST to pretty-printed JSON.
+    pub fn to_json_pretty(&self) -> Result<String, serde_json::Error> {
+        serde_json::to_string_pretty(self)
+    }
+
+    /// Deserialize an AST from JSON.
+    pub fn from_json(json: &str) -> Result<Self, serde_json::Error> {
+        serde_json::from_str(json)
     }
 }
 
@@ -258,5 +274,37 @@ mod tests {
         assert!(out.contains("<sum>"));
         assert!(out.contains("<NUMBER> 3 </NUMBER>"));
         assert!(out.contains("</sum>"));
+    }
+
+    #[test]
+    fn test_json_roundtrip() {
+        let mut root = Ast::new("sum").with_id("root");
+        root.set_attr("optimized", true);
+
+        let mut child = Ast::with_value("NUMBER", "3").with_id("left");
+        child.set_attr("kind", "literal");
+        root.add_child(child);
+
+        let json = root.to_json_pretty().unwrap();
+        let parsed = Ast::from_json(&json).unwrap();
+
+        assert_eq!(parsed.name, "sum");
+        assert_eq!(parsed.id, "root");
+        assert_eq!(parsed.get_attr("optimized"), Some(&AstAttr::Bool(true)));
+        assert_eq!(parsed.children().len(), 1);
+        assert_eq!(parsed.nth_child(0).name, "NUMBER");
+        assert_eq!(parsed.nth_child(0).value.as_deref(), Some("3"));
+        assert_eq!(parsed.nth_child(0).id, "left");
+        assert_eq!(
+            parsed.nth_child(0).get_attr("kind"),
+            Some(&AstAttr::Str("literal".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_from_json_invalid_input() {
+        let invalid_json = "{not-valid-json";
+        let result = Ast::from_json(invalid_json);
+        assert!(result.is_err());
     }
 }
