@@ -14,9 +14,9 @@
 //! lg.add_rule("WS",     r"\s+", true,  false);
 //!
 //! let mut grammar = Grammar::new();
-//! grammar.add_rule("expr", true, |g| {
+//! grammar.define_rule("expr", true, |g| {
 //!     seq(vec![g.rule_ref("expr"), tok("PLUS"), g.rule_ref("expr")])
-//! });
+//! }).finalize();
 //!
 //! let mut parser = TextParser::new(grammar, lg);
 //! let ast = parser.parse_text("1 + 2").unwrap();

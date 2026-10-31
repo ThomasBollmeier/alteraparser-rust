@@ -609,6 +609,34 @@ pub fn with_id(mut element: Box<dyn GrammarElement>, id: &str) -> Box<dyn Gramma
 
 type AstTransformer = Box<dyn Fn(Ast) -> Ast>;
 
+/// Fluent configuration for adding a grammar rule and optional AST transformer.
+pub struct RuleConfig<'a> {
+    grammar: &'a mut Grammar,
+    name: String,
+    is_start: bool,
+    expander: ExpanderFn,
+    transformer: Option<AstTransformer>,
+}
+
+impl<'a> RuleConfig<'a> {
+    /// Register the AST transformer for the rule being configured.
+    pub fn transform(mut self, f: impl Fn(Ast) -> Ast + 'static) -> Self {
+        self.transformer = Some(Box::new(f));
+        self
+    }
+
+    /// Commit the configured rule (and optional transformer) to the grammar.
+    pub fn finalize(self) {
+        self.grammar.rule_defs.insert(self.name.clone(), self.expander);
+        if self.is_start || self.grammar.start_rule.is_none() {
+            self.grammar.start_rule = Some(self.name.clone());
+        }
+        if let Some(transformer) = self.transformer {
+            self.grammar.ast_transformers.insert(self.name, transformer);
+        }
+    }
+}
+
 /// The complete grammar: rule definitions and optional AST transformers.
 ///
 /// Call [`Grammar::compile`] once before parsing.
@@ -648,6 +676,23 @@ impl Grammar {
         self.rule_defs.insert(name.to_string(), Rc::new(expander));
         if is_start || self.start_rule.is_none() {
             self.start_rule = Some(name.to_string());
+        }
+    }
+
+    /// Begin fluent rule definition. Call [`RuleConfig::finalize`] to register
+    /// the rule in the grammar.
+    pub fn define_rule(
+        &mut self,
+        name: &str,
+        is_start: bool,
+        expander: impl Fn(&GrammarHandle) -> Box<dyn GrammarElement> + 'static,
+    ) -> RuleConfig<'_> {
+        RuleConfig {
+            grammar: self,
+            name: name.to_string(),
+            is_start,
+            expander: Rc::new(expander),
+            transformer: None,
         }
     }
 
@@ -879,5 +924,32 @@ mod tests {
             non_existent.is_err(),
             "should not retrieve non-existing rule"
         );
+    }
+
+    #[test]
+    fn test_define_rule_with_transformer() {
+        let mut g = Grammar::new();
+        g.define_rule("group", true, |h| {
+            seq(vec![tok("LPAREN"), h.rule_ref("expr"), tok("RPAREN")])
+        })
+        .transform(|ast| ast[1].clone())
+        .finalize();
+        g.add_rule("expr", false, |_| tok("NUM"));
+
+        assert!(g.get_ast_transformer("group").is_some());
+        g.compile();
+        let follows = find_follow_tokens(&g.start_node());
+        assert_eq!(follows[0].0, "LPAREN");
+    }
+
+    #[test]
+    fn test_define_rule_finalize_without_transformer() {
+        let mut g = Grammar::new();
+        g.define_rule("expr", true, |_| tok("NUM")).finalize();
+
+        assert!(g.get_ast_transformer("expr").is_none());
+        g.compile();
+        let follows = find_follow_tokens(&g.start_node());
+        assert_eq!(follows[0].0, "NUM");
     }
 }

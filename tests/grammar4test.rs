@@ -47,7 +47,7 @@ pub fn make_grammar() -> Grammar {
     let mut g = Grammar::new();
 
     // sum = term (('+' | '-') term)*
-    g.add_rule("sum", true, |h| {
+    g.define_rule("sum", true, |h| {
         seq(vec![
             h.rule_ref("term"),
             many(seq(vec![
@@ -55,10 +55,12 @@ pub fn make_grammar() -> Grammar {
                 h.rule_ref("term"),
             ])),
         ])
-    });
+    })
+    .transform(trans_single_child)
+    .finalize();
 
     // term = factor (('*' | '/') factor)*
-    g.add_rule("term", false, |h| {
+    g.define_rule("term", false, |h| {
         seq(vec![
             h.rule_ref("factor"),
             many(seq(vec![
@@ -66,28 +68,32 @@ pub fn make_grammar() -> Grammar {
                 h.rule_ref("factor"),
             ])),
         ])
-    });
+    })
+    .transform(trans_single_child)
+    .finalize();
 
     // factor = NUMBER | IDENT | group | call
-    g.add_rule("factor", false, |h| {
+    g.define_rule("factor", false, |h| {
         choice(vec![
             tok("NUMBER"),
             tok("IDENT"),
             h.rule_ref("group"),
             h.rule_ref("call"),
         ])
-    });
+    })
+    .transform(trans_single_child)
+    .finalize();
 
     // group = '(' sum ')'
-    g.add_rule("group", false, |h| {
+    g.define_rule("group", false, |h| {
         seq(vec![tok("LPAREN"), h.rule_ref("sum"), tok("RPAREN")])
-    });
-
+    })
     // group transformer: return the middle child (the sum), skip the parens
-    g.add_ast_transformer("group", |ast| ast[1].clone());
+    .transform(|ast| ast[1].clone())
+    .finalize();
 
     // call = IDENT '(' [sum (',' sum)*] ')'
-    g.add_rule("call", false, |h| {
+    g.define_rule("call", false, |h| {
         let rest_args = many(seq(vec![tok("COMMA"), with_id(h.rule_ref("sum"), "arg")]));
         let args = opt(seq(vec![with_id(h.rule_ref("sum"), "arg"), rest_args]));
         seq(vec![
@@ -96,10 +102,9 @@ pub fn make_grammar() -> Grammar {
             args,
             tok("RPAREN"),
         ])
-    });
-
+    })
     // call transformer: restructure to { callee, arguments[] }
-    g.add_ast_transformer("call", |ast| {
+    .transform(|ast| {
         let mut call_node = Ast::new("call");
 
         let callee_value = ast
@@ -116,11 +121,8 @@ pub fn make_grammar() -> Grammar {
         call_node.add_child(args_node);
 
         call_node
-    });
-
-    g.add_ast_transformer("sum",    trans_single_child);
-    g.add_ast_transformer("term",   trans_single_child);
-    g.add_ast_transformer("factor", trans_single_child);
+    })
+    .finalize();
 
     g
 }
